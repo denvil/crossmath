@@ -154,6 +154,46 @@ Validation enforces:
 
 ## Deployment
 
+### GitHub Pages
+
+This repo includes a GitHub Actions workflow at:
+
+```text
+.github/workflows/pages.yml
+```
+
+The workflow publishes a clean static artifact. It deploys only:
+
+```text
+index.html
+app.js
+puzzle-counts.js
+puzzles/
+.nojekyll
+```
+
+The Python tools, docs, specs, and workflow files are not included in the published Pages artifact.
+
+GitHub setup steps:
+
+1. Push this repo to GitHub.
+2. Open the repository on GitHub.
+3. Go to `Settings` -> `Pages`.
+4. Under `Build and deployment`, set `Source` to `GitHub Actions`.
+5. Push to the `main` branch, or run `Deploy static site to GitHub Pages` manually from the `Actions` tab.
+6. After the workflow succeeds, open the Pages URL shown in the deployment summary.
+
+The workflow generates puzzles during deployment:
+
+```text
+python tools/generate_puzzles.py --difficulty all --count 12 --out _site/puzzles --counts-out _site/puzzle-counts.js
+python tools/solver.py --validate _site/puzzles
+```
+
+To change the deployed puzzle count, edit `--count 12` in `.github/workflows/pages.yml`.
+
+### nginx
+
 Deploy the repo contents as static files. Example nginx location:
 
 ```nginx
