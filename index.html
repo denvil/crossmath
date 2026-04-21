@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>CrossMath</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      :root {
+        color-scheme: light;
+      }
+
+      body {
+        letter-spacing: 0;
+        touch-action: manipulation;
+      }
+
+      .board-grid {
+        display: grid;
+        grid-template-columns: repeat(var(--board-cols, 7), minmax(0, 1fr));
+        gap: var(--board-gap, 6px);
+      }
+
+      @media (min-width: 420px) {
+        .board-grid {
+          gap: var(--board-gap-wide, 8px);
+        }
+      }
+
+      .board-cell,
+      .tray-tile {
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      .tray-tile {
+        touch-action: none;
+        user-select: none;
+      }
+
+      .drag-ghost {
+        pointer-events: none;
+        position: fixed;
+        z-index: 60;
+        transform: translate(-50%, -50%);
+      }
+
+      .slot-empty::after {
+        content: "";
+        width: 42%;
+        height: 3px;
+        border-radius: 999px;
+        background: currentColor;
+        opacity: 0.45;
+      }
+    </style>
+  </head>
+  <body class="min-h-screen overflow-x-hidden bg-stone-100 text-slate-950">
+    <main class="mx-auto flex min-h-screen w-full max-w-xl flex-col px-1 pb-48 pt-4 sm:px-4">
+      <header class="mb-4 flex items-center justify-between gap-3">
+        <div>
+          <h1 class="text-2xl font-black leading-tight">CrossMath</h1>
+          <p id="puzzleMeta" class="mt-1 text-sm font-medium text-slate-600"></p>
+        </div>
+        <div class="grid shrink-0 grid-cols-3 gap-2">
+          <button id="resetButton" type="button" class="min-h-11 rounded-md border border-slate-300 bg-white px-4 text-sm font-bold text-slate-900 shadow-sm active:translate-y-px">
+            Reset
+          </button>
+          <button id="revealButton" type="button" class="min-h-11 rounded-md border border-slate-300 bg-white px-4 text-sm font-bold text-slate-900 shadow-sm active:translate-y-px">
+            Reveal
+          </button>
+          <button id="checkButton" type="button" class="min-h-11 rounded-md bg-emerald-700 px-4 text-sm font-bold text-white shadow-sm active:translate-y-px">
+            Check
+          </button>
+        </div>
+      </header>
+
+      <nav class="mb-3 grid grid-cols-3 gap-2" aria-label="Difficulty">
+        <button type="button" data-difficulty="easy" class="difficulty-button min-h-10 rounded-md border border-slate-300 bg-white px-3 text-sm font-black text-slate-800 shadow-sm active:translate-y-px">
+          Easy
+        </button>
+        <button type="button" data-difficulty="medium" class="difficulty-button min-h-10 rounded-md border border-slate-300 bg-white px-3 text-sm font-black text-slate-800 shadow-sm active:translate-y-px">
+          Medium
+        </button>
+        <button type="button" data-difficulty="hard" class="difficulty-button min-h-10 rounded-md border border-slate-300 bg-white px-3 text-sm font-black text-slate-800 shadow-sm active:translate-y-px">
+          Hard
+        </button>
+      </nav>
+
+      <section class="flex flex-1 flex-col items-center justify-center">
+        <div id="board" class="board-grid w-full max-w-[520px]" aria-label="CrossMath board"></div>
+        <p id="status" class="mt-4 min-h-6 text-center text-sm font-bold text-slate-700" role="status" aria-live="polite"></p>
+      </section>
+    </main>
+
+    <section class="fixed inset-x-0 bottom-0 border-t border-slate-300 bg-white/95 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 shadow-[0_-8px_24px_rgba(15,23,42,0.12)] backdrop-blur">
+      <div class="mx-auto max-w-xl">
+        <div class="mb-2 flex items-center justify-between gap-3">
+          <h2 class="text-sm font-black uppercase text-slate-700">Tray</h2>
+          <p id="trayHint" class="text-right text-sm font-semibold text-slate-600">Tap a tile, then a slot</p>
+        </div>
+        <div id="tray" class="grid grid-cols-8 gap-2 sm:grid-cols-11" aria-label="Number tray"></div>
+      </div>
+    </section>
+
+    <script src="puzzle-counts.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>
