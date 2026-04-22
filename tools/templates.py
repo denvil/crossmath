@@ -288,11 +288,18 @@ def hard_template(puzzle_id: str, seed: int) -> dict:
     puzzle["difficulty"] = "hard"
     puzzle["template_id"] = "cross_11x11_hard_01"
     replacements = {
+        "r0c2": {"value": 2},
+        "r0c4": {"solution": 3},
         "r0c6": {"solution": 8},
         "r0c10": {"solution": 12},
         "r2c10": {"solution": 6},
+        "r4c2": {"solution": 9},
+        "r4c4": {"value": 6},
         "r4c6": {"solution": 12},
         "r4c7": {"value": "/"},
+        "r8c10": {"value": 9},
+        "r10c8": {"solution": 2},
+        "r10c10": {"solution": 14},
     }
 
     for cell in puzzle["cells"]:

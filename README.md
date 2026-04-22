@@ -2,6 +2,8 @@
 
 Static, mobile-first CrossMath-style puzzle website. The browser app is plain HTML, Tailwind via CDN, and vanilla JavaScript. Puzzle generation happens offline with Python, and exported puzzle JSON files are served as static assets.
 
+Live site: https://denvil.github.io/crossmath/
+
 ## Current Status
 
 Phase 3 has static puzzle loading, persistence, and offline puzzle tooling. The site loads JSON puzzles from `puzzles/`, uses `puzzle-counts.js`, keeps exact consumable tray tiles, and saves current progress in `localStorage`.
@@ -137,6 +139,7 @@ Validation enforces:
 - every adjacent rendered cell pair is consecutive inside an equation run
 - division uses whole-number results only
 - multiplication cannot use 0 or 1, and division cannot divide by 1 or by the same number
+- hard puzzles cannot use 1 in any equation value
 - tray inventory exactly matches missing slot values
 - each exported puzzle has exactly one solution
 

@@ -35,6 +35,11 @@ def validate_operation_rule(left: int, operator: str, right: int) -> None:
         raise ValueError(f"trivial division is not allowed: {left} / {right}")
 
 
+def validate_difficulty_operation_rule(puzzle: dict, values: tuple[int, int, int]) -> None:
+    if puzzle.get("difficulty") == "hard" and 1 in values:
+        raise ValueError(f"{puzzle['id']}: hard puzzles cannot use 1 in calculations")
+
+
 def run_status(run: list[str], cells_by_id: dict[str, dict], assignments: dict[str, int]) -> bool | None:
     left_cell, op_cell, right_cell, eq_cell, result_cell = [cells_by_id[cell_id] for cell_id in run]
     if op_cell["type"] != "operator" or eq_cell["type"] != "equals":
@@ -169,7 +174,9 @@ def validate_solution(puzzle: dict) -> None:
         left_cell, op_cell, right_cell, _, _ = [cells_by_id[cell_id] for cell_id in run]
         left = cell_value(left_cell, assignments)
         right = cell_value(right_cell, assignments)
-        if left is not None and right is not None:
+        result = cell_value(cells_by_id[run[4]], assignments)
+        if left is not None and right is not None and result is not None:
+            validate_difficulty_operation_rule(puzzle, (left, right, result))
             validate_operation_rule(left, op_cell["value"], right)
         if run_status(run, cells_by_id, assignments) is not True:
             raise ValueError(f"{puzzle['id']}: solution fails run {run}")
