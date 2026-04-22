@@ -136,6 +136,7 @@ Validation enforces:
 - all rendered cells form one orthogonally connected board
 - every adjacent rendered cell pair is consecutive inside an equation run
 - division uses whole-number results only
+- multiplication cannot use 0 or 1, and division cannot divide by 1 or by the same number
 - tray inventory exactly matches missing slot values
 - each exported puzzle has exactly one solution
 

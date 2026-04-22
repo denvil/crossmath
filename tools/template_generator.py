@@ -157,9 +157,11 @@ def evaluate(left: int, operator_value: str, right: int) -> int | None:
     if operator_value == "-":
         return left - right
     if operator_value == "x":
+        if left in {0, 1} or right in {0, 1}:
+            return None
         return left * right
     if operator_value == "/":
-        if right == 0 or left % right != 0:
+        if right in {0, 1} or left == right or left % right != 0:
             return None
         return left // right
     raise ValueError(f"Unsupported operator: {operator_value}")

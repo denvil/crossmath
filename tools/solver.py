@@ -28,6 +28,13 @@ def evaluate(left: int, operator: str, right: int) -> int | None:
     raise ValueError(f"Unsupported operator: {operator}")
 
 
+def validate_operation_rule(left: int, operator: str, right: int) -> None:
+    if operator in {"x", "*"} and (left in {0, 1} or right in {0, 1}):
+        raise ValueError(f"trivial multiplication is not allowed: {left} {operator} {right}")
+    if operator == "/" and (right in {0, 1} or left == right):
+        raise ValueError(f"trivial division is not allowed: {left} / {right}")
+
+
 def run_status(run: list[str], cells_by_id: dict[str, dict], assignments: dict[str, int]) -> bool | None:
     left_cell, op_cell, right_cell, eq_cell, result_cell = [cells_by_id[cell_id] for cell_id in run]
     if op_cell["type"] != "operator" or eq_cell["type"] != "equals":
@@ -159,6 +166,11 @@ def validate_solution(puzzle: dict) -> None:
     cells_by_id = {cell["id"]: cell for cell in puzzle["cells"]}
     assignments = {cell["id"]: int(cell["solution"]) for cell in puzzle["cells"] if cell["type"] == "slot"}
     for run in puzzle_runs(puzzle):
+        left_cell, op_cell, right_cell, _, _ = [cells_by_id[cell_id] for cell_id in run]
+        left = cell_value(left_cell, assignments)
+        right = cell_value(right_cell, assignments)
+        if left is not None and right is not None:
+            validate_operation_rule(left, op_cell["value"], right)
         if run_status(run, cells_by_id, assignments) is not True:
             raise ValueError(f"{puzzle['id']}: solution fails run {run}")
 
