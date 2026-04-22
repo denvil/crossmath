@@ -25,12 +25,63 @@ class Profile:
     max_value: int
     allow_two_digit: bool
     loop_probability: float
+    extra_slot_probability: float
+    min_slots: int
+    max_slots: int
+    min_two_digit_slots: int
+    min_cycle_count: int
+    min_single_step_stuck_slots: int
 
 
 PROFILES = {
-    "easy": Profile(rows=7, cols=9, target_runs=4, operators=("+", "-"), min_value=1, max_value=9, allow_two_digit=False, loop_probability=0.05),
-    "medium": Profile(rows=11, cols=11, target_runs=8, operators=("+", "-", "x"), min_value=1, max_value=12, allow_two_digit=True, loop_probability=0.28),
-    "hard": Profile(rows=11, cols=11, target_runs=10, operators=("+", "-", "x", "/"), min_value=1, max_value=18, allow_two_digit=True, loop_probability=0.42),
+    "easy": Profile(
+        rows=7,
+        cols=9,
+        target_runs=4,
+        operators=("+", "-"),
+        min_value=1,
+        max_value=9,
+        allow_two_digit=False,
+        loop_probability=0.05,
+        extra_slot_probability=0.0,
+        min_slots=0,
+        max_slots=0,
+        min_two_digit_slots=0,
+        min_cycle_count=0,
+        min_single_step_stuck_slots=0,
+    ),
+    "medium": Profile(
+        rows=11,
+        cols=11,
+        target_runs=9,
+        operators=("+", "-", "x"),
+        min_value=1,
+        max_value=14,
+        allow_two_digit=True,
+        loop_probability=0.35,
+        extra_slot_probability=0.35,
+        min_slots=10,
+        max_slots=14,
+        min_two_digit_slots=1,
+        min_cycle_count=1,
+        min_single_step_stuck_slots=1,
+    ),
+    "hard": Profile(
+        rows=13,
+        cols=13,
+        target_runs=12,
+        operators=("+", "-", "x", "/"),
+        min_value=1,
+        max_value=24,
+        allow_two_digit=True,
+        loop_probability=0.5,
+        extra_slot_probability=0.45,
+        min_slots=14,
+        max_slots=18,
+        min_two_digit_slots=4,
+        min_cycle_count=3,
+        min_single_step_stuck_slots=3,
+    ),
 }
 
 
@@ -203,6 +254,79 @@ def cycle_count(runs: list[list[tuple[int, int]]]) -> int:
     return max(0, len(edges) - len(vertices) + 1)
 
 
+def choose_slot_positions(
+    rng: random.Random,
+    profile: Profile,
+    new_number_positions: list[tuple[int, int]],
+) -> set[tuple[int, int]]:
+    if not new_number_positions:
+        return set()
+
+    shuffled = list(new_number_positions)
+    rng.shuffle(shuffled)
+    chosen = {shuffled[0]}
+    for coord in shuffled[1:]:
+        if rng.random() < profile.extra_slot_probability:
+            chosen.add(coord)
+    return chosen
+
+
+def single_step_solve_stats(puzzle: dict) -> dict:
+    cells_by_id = {cell["id"]: cell for cell in puzzle["cells"]}
+    unresolved_slots = {cell["id"] for cell in puzzle["cells"] if cell["type"] == "slot"}
+    steps = 0
+
+    while unresolved_slots:
+        step_slots = set()
+        for run in puzzle["runs"]:
+            missing = [cell_id for cell_id in run if cell_id in unresolved_slots]
+            if len(missing) == 1:
+                step_slots.add(missing[0])
+        if not step_slots:
+            break
+        unresolved_slots -= step_slots
+        steps += 1
+
+    slot_count = sum(1 for cell in cells_by_id.values() if cell["type"] == "slot")
+    return {
+        "solved_slots": slot_count - len(unresolved_slots),
+        "stuck_slots": len(unresolved_slots),
+        "steps": steps,
+    }
+
+
+def validate_difficulty_profile(puzzle: dict, profile: Profile) -> dict:
+    slots = [cell for cell in puzzle["cells"] if cell["type"] == "slot"]
+    two_digit_slots = sum(int(cell["solution"]) >= 10 for cell in slots)
+    puzzle_cycle_count = puzzle["template_metadata"]["cycle_count"]
+    single_step_stats = single_step_solve_stats(puzzle)
+
+    if len(slots) < profile.min_slots:
+        raise RuntimeError(f"{puzzle['id']}: expected at least {profile.min_slots} slots, found {len(slots)}")
+    if profile.max_slots and len(slots) > profile.max_slots:
+        raise RuntimeError(f"{puzzle['id']}: expected at most {profile.max_slots} slots, found {len(slots)}")
+    if two_digit_slots < profile.min_two_digit_slots:
+        raise RuntimeError(
+            f"{puzzle['id']}: expected at least {profile.min_two_digit_slots} two-digit slots, found {two_digit_slots}"
+        )
+    if puzzle_cycle_count < profile.min_cycle_count:
+        raise RuntimeError(
+            f"{puzzle['id']}: expected at least {profile.min_cycle_count} cycles, found {puzzle_cycle_count}"
+        )
+    if single_step_stats["stuck_slots"] < profile.min_single_step_stuck_slots:
+        raise RuntimeError(
+            f"{puzzle['id']}: expected at least {profile.min_single_step_stuck_slots} non-single-step slots, "
+            f"found {single_step_stats['stuck_slots']}"
+        )
+
+    return {
+        "two_digit_slot_count": two_digit_slots,
+        "single_step_solved_slots": single_step_stats["solved_slots"],
+        "single_step_stuck_slots": single_step_stats["stuck_slots"],
+        "single_step_steps": single_step_stats["steps"],
+    }
+
+
 def add_run(
     *,
     rng: random.Random,
@@ -257,8 +381,7 @@ def add_run(
             values[coord] = run_values[(0, 2, 4).index(index)]
 
         new_number_positions = [coord for coord in (coords[0], coords[2], coords[4]) if coord not in overlaps]
-        if new_number_positions:
-            slot_positions.add(rng.choice(new_number_positions))
+        slot_positions.update(choose_slot_positions(rng, profile, new_number_positions))
         runs.append(coords)
         run_edges.update(adjacent_pairs(coords))
         return True
@@ -346,6 +469,8 @@ def generate_template_puzzle_once(difficulty: str, puzzle_id: str, seed: int) ->
         "retry_count": retries,
         "loop_retry_count": loop_attempts,
     }
+    difficulty_metadata = validate_difficulty_profile(puzzle, profile)
+    puzzle["template_metadata"].update(difficulty_metadata)
     validate_template_structure(puzzle)
     validate_inventory(puzzle)
     validate_solution(puzzle)
